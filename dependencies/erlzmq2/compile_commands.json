@@ -1,0 +1,10 @@
+[
+{ "file"      : "c_src/erlzmq_nif.c"
+, "directory" : "/home/clock/Mestrado/2Sem/PSD/Trabalho/dependencies/erlzmq2"
+, "command"   : "cc -c -Ic_src -Ideps/zeromq3/include -g -Wall -fPIC -I\"/usr/lib/erlang/lib/erl_interface-5.1/include\" -I\"/usr/lib/erlang/erts-12.2.1/include\" c_src/erlzmq_nif.c -o c_src/erlzmq_nif.o"
+},
+{ "file"      : "c_src/vector.c"
+, "directory" : "/home/clock/Mestrado/2Sem/PSD/Trabalho/dependencies/erlzmq2"
+, "command"   : "cc -c -Ic_src -Ideps/zeromq3/include -g -Wall -fPIC -I\"/usr/lib/erlang/lib/erl_interface-5.1/include\" -I\"/usr/lib/erlang/erts-12.2.1/include\" c_src/vector.c -o c_src/vector.o"
+}
+]
