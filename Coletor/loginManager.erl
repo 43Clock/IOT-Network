@@ -1,5 +1,5 @@
 -module(loginManager).
--export([start/0,login_and_create/3,logout/1,online/0]).
+-export([start/0,login_and_create/2,logout/1,online/0]).
 
 start() -> 
     %register(login_manager,spawn(fun() -> loop() end)).
@@ -13,8 +13,8 @@ rpc(Req) ->
                 Res 
     end.
 
-login_and_create(Username, Password, Tipo) -> 
-    rpc({login,Username,Password,Tipo}).
+login_and_create(Username, Password) -> 
+    rpc({login,Username,Password}).
 
 logout(Username) -> 
     rpc({logout,Username}).
@@ -26,16 +26,16 @@ online() ->
 
 loop(Map) ->
     receive
-    {{login,Username,Password, Tipo},From} -> 
+    {{login,Username,Password},From} -> 
         case maps:is_key(Username,Map) of
             false ->
                 From ! {ok_register, ?MODULE},
-                loop(maps:put(Username,{Password,Tipo,true}, Map));
+                loop(maps:put(Username,{Password,true}, Map));
             true ->
                 case maps:get(Username,Map) of
-                    {Password,Tipo,_} ->
+                    {Password,_} ->
                         From ! {ok,?MODULE},
-                        loop(maps:update(Username,{Password,Tipo,true},Map));
+                        loop(maps:update(Username,{Password,true},Map));
                     _ ->
                         From ! {invalid, ?MODULE},
                         loop(Map)
@@ -48,12 +48,12 @@ loop(Map) ->
                 loop(Map);
             true ->
                 From ! {ok,?MODULE},
-                {Password,Tipo,_} = maps:get(Username,Map),
-                loop(maps:update(Username,{Password,Tipo,false},Map))
+                {Password,_} = maps:get(Username,Map),
+                loop(maps:update(Username,{Password,false},Map))
         end;
 
     {{online},From} -> 
-        Filtered = maps:filter(fun(_,{_,_,B})->B end,Map),
+        Filtered = maps:filter(fun(_,{_,B})->B end,Map),
         List = maps:keys(Filtered),
         From ! {List,?MODULE},
         loop(Map)
