@@ -72,26 +72,26 @@
 <tr><td valign="top"><a href="#context-0">context/0</a></td><td>Equivalent to <a href="#context-1"><tt>context(1)</tt></a>.
 </td></tr>
 <tr><td valign="top"><a href="#context-1">context/1</a></td><td>Create a new erlzmq context with the specified number of io threads.</td></tr>
-<tr><td valign="top"><a href="#getsockopt-2">getsockopt/2</a></td><td>Get an <a docgen-rel="seetype" docgen-href="#erlzmq_sockopt/0" href="#type-erlzmq_sockopt">option</a> associated with a socket.</td></tr>
+<tr><td valign="top"><a href="#getsockopt-2">getsockopt/2</a></td><td>Get an <a href="#type-erlzmq_sockopt">option</a> associated with a socket.</td></tr>
 <tr><td valign="top"><a href="#recv-1">recv/1</a></td><td>Equivalent to <a href="#recv-2"><tt>recv(Socket, 0)</tt></a>.
 </td></tr>
 <tr><td valign="top"><a href="#recv-2">recv/2</a></td><td>Receive a message from a socket.</td></tr>
 <tr><td valign="top"><a href="#recvmsg-1">recvmsg/1</a></td><td>This function exists for zeromq api compatibility and doesn't
   actually provide any different functionality then what you get with
-  the <a docgen-rel="seemfa" docgen-href="erlzmq#recv/3" href="erlzmq.html#recv-3"><code>erlzmq:recv/3</code></a> function.</td></tr>
+  the <a href="erlzmq.html#recv-3"><code>erlzmq:recv/3</code></a> function.</td></tr>
 <tr><td valign="top"><a href="#recvmsg-2">recvmsg/2</a></td><td>This function exists for zeromq api compatibility and doesn't
   actually provide any different functionality then what you get with
-  the <a docgen-rel="seemfa" docgen-href="erlzmq#recv/3" href="erlzmq.html#recv-3"><code>erlzmq:recv/3</code></a> function.</td></tr>
+  the <a href="erlzmq.html#recv-3"><code>erlzmq:recv/3</code></a> function.</td></tr>
 <tr><td valign="top"><a href="#send-2">send/2</a></td><td>Equivalent to <a href="#send-3"><tt>send(Socket, Msg, [])</tt></a>.
 </td></tr>
 <tr><td valign="top"><a href="#send-3">send/3</a></td><td>Send a message on a socket.</td></tr>
 <tr><td valign="top"><a href="#sendmsg-2">sendmsg/2</a></td><td>This function exists for zeromq api compatibility and doesn't
   actually provide any different functionality then what you get with
-  the <a docgen-rel="seemfa" docgen-href="erlzmq#send/2" href="erlzmq.html#send-2"><code>erlzmq:send/2</code></a> function.</td></tr>
+  the <a href="erlzmq.html#send-2"><code>erlzmq:send/2</code></a> function.</td></tr>
 <tr><td valign="top"><a href="#sendmsg-3">sendmsg/3</a></td><td>This function exists for zeromq api compatibility and doesn't
   actually provide any different functionality then what you get with
-  the <a docgen-rel="seemfa" docgen-href="erlzmq#send/3" href="erlzmq.html#send-3"><code>erlzmq:send/3</code></a> function.</td></tr>
-<tr><td valign="top"><a href="#setsockopt-3">setsockopt/3</a></td><td>Set an <a docgen-rel="seetype" docgen-href="#erlzmq_sockopt/0" href="#type-erlzmq_sockopt">option</a> associated with a socket.</td></tr>
+  the <a href="erlzmq.html#send-3"><code>erlzmq:send/3</code></a> function.</td></tr>
+<tr><td valign="top"><a href="#setsockopt-3">setsockopt/3</a></td><td>Set an <a href="#type-erlzmq_sockopt">option</a> associated with a socket.</td></tr>
 <tr><td valign="top"><a href="#socket-2">socket/2</a></td><td>Create a socket.</td></tr>
 <tr><td valign="top"><a href="#term-1">term/1</a></td><td>Equivalent to <a href="#term-2"><tt>term(Context, infinity)</tt></a>.
 </td></tr>
@@ -104,7 +104,6 @@
 <h3 class="function"><a name="bind-2">bind/2</a></h3>
 <div class="spec">
 <p><tt>bind(Socket::<a href="#type-erlzmq_socket">erlzmq_socket()</a>, Endpoint::<a href="#type-erlzmq_endpoint">erlzmq_endpoint()</a>) -&gt; ok | <a href="#type-erlzmq_error">erlzmq_error()</a></tt><br></p>
-<p> </p>
 </div><p>Accept connections on a socket.
   <br>
   <i>For more information see
@@ -113,14 +112,12 @@
 <h3 class="function"><a name="close-1">close/1</a></h3>
 <div class="spec">
 <p><tt>close(Socket::<a href="#type-erlzmq_socket">erlzmq_socket()</a>) -&gt; ok | <a href="#type-erlzmq_error">erlzmq_error()</a></tt><br></p>
-<p> </p>
 </div><p>Equivalent to <a href="#close-2"><tt>close(Socket, infinity)</tt></a>.</p>
 
 
 <h3 class="function"><a name="close-2">close/2</a></h3>
 <div class="spec">
 <p><tt>close(Socket::<a href="#type-erlzmq_socket">erlzmq_socket()</a>, Timeout::timeout()) -&gt; ok | <a href="#type-erlzmq_error">erlzmq_error()</a></tt><br></p>
-<p> </p>
 </div><p>Close the given socket.
   <br>
   <i>For more information see
@@ -129,7 +126,6 @@
 <h3 class="function"><a name="connect-2">connect/2</a></h3>
 <div class="spec">
 <p><tt>connect(Socket::<a href="#type-erlzmq_socket">erlzmq_socket()</a>, Endpoint::<a href="#type-erlzmq_endpoint">erlzmq_endpoint()</a>) -&gt; ok | <a href="#type-erlzmq_error">erlzmq_error()</a></tt><br></p>
-<p> </p>
 </div><p>Connect a socket.
   <br>
   <i>For more information see
@@ -138,14 +134,12 @@
 <h3 class="function"><a name="context-0">context/0</a></h3>
 <div class="spec">
 <p><tt>context() -&gt; {ok, <a href="#type-erlzmq_context">erlzmq_context()</a>} | <a href="#type-erlzmq_error">erlzmq_error()</a></tt><br></p>
-<p> </p>
 </div><p>Equivalent to <a href="#context-1"><tt>context(1)</tt></a>.</p>
 
 
 <h3 class="function"><a name="context-1">context/1</a></h3>
 <div class="spec">
 <p><tt>context(Threads::pos_integer()) -&gt; {ok, <a href="#type-erlzmq_context">erlzmq_context()</a>} | <a href="#type-erlzmq_error">erlzmq_error()</a></tt><br></p>
-<p> </p>
 </div><p>Create a new erlzmq context with the specified number of io threads.
   <br>
   If the context can be created an 'ok' tuple containing an
@@ -153,7 +147,7 @@
   if not, it returns an 'error' tuple with an <code><a href="#type-erlzmq_type_error">erlzmq_type_error()</a></code>
   describing the error.
   <br>
-  The context must be later cleaned up calling <a docgen-rel="seemfa" docgen-href="erlzmq#term/1" href="erlzmq.html#term-1">term/1</a>
+  The context must be later cleaned up calling <a href="erlzmq.html#term-1">term/1</a>
   <br>
   <i>For more information see
   <a href="http://api.zeromq.org/master:zmq-init">zmq_init</a></i></p>
@@ -161,8 +155,7 @@
 <h3 class="function"><a name="getsockopt-2">getsockopt/2</a></h3>
 <div class="spec">
 <p><tt>getsockopt(Socket::<a href="#type-erlzmq_socket">erlzmq_socket()</a>, Name::<a href="#type-erlzmq_sockopt">erlzmq_sockopt()</a>) -&gt; {ok, <a href="#type-erlzmq_sockopt_value">erlzmq_sockopt_value()</a>} | <a href="#type-erlzmq_error">erlzmq_error()</a></tt><br></p>
-<p> </p>
-</div><p>Get an <a docgen-rel="seetype" docgen-href="#erlzmq_sockopt/0" href="#type-erlzmq_sockopt">option</a> associated with a socket.
+</div><p>Get an <a href="#type-erlzmq_sockopt">option</a> associated with a socket.
   <br>
   <i>For more information see
   <a href="http://api.zeromq.org/master:zmq_getsockopt">zmq_getsockopt</a>.</i></p>
@@ -170,14 +163,12 @@
 <h3 class="function"><a name="recv-1">recv/1</a></h3>
 <div class="spec">
 <p><tt>recv(Socket::<a href="#type-erlzmq_socket">erlzmq_socket()</a>) -&gt; {ok, <a href="#type-erlzmq_data">erlzmq_data()</a>} | <a href="#type-erlzmq_error">erlzmq_error()</a></tt><br></p>
-<p> </p>
 </div><p>Equivalent to <a href="#recv-2"><tt>recv(Socket, 0)</tt></a>.</p>
 
 
 <h3 class="function"><a name="recv-2">recv/2</a></h3>
 <div class="spec">
 <p><tt>recv(Socket::<a href="#type-erlzmq_socket">erlzmq_socket()</a>, Flags::<a href="#type-erlzmq_send_recv_flags">erlzmq_send_recv_flags()</a>) -&gt; {ok, <a href="#type-erlzmq_data">erlzmq_data()</a>} | <a href="#type-erlzmq_error">erlzmq_error()</a></tt><br></p>
-<p> </p>
 </div><p>Receive a message from a socket.
   <br>
   <i>For more information see
@@ -186,36 +177,32 @@
 <h3 class="function"><a name="recvmsg-1">recvmsg/1</a></h3>
 <div class="spec">
 <p><tt>recvmsg(Socket::<a href="#type-erlzmq_socket">erlzmq_socket()</a>) -&gt; {ok, <a href="#type-erlzmq_data">erlzmq_data()</a>} | <a href="#type-erlzmq_error">erlzmq_error()</a></tt><br></p>
-<p> </p>
 </div><p>Equivalent to <a href="#recv-2"><tt>recv(Socket, 0)</tt></a>.</p>
 <p>This function exists for zeromq api compatibility and doesn't
   actually provide any different functionality then what you get with
-  the <a docgen-rel="seemfa" docgen-href="erlzmq#recv/3" href="erlzmq.html#recv-3"><code>erlzmq:recv/3</code></a> function. In fact this function just
+  the <a href="erlzmq.html#recv-3"><code>erlzmq:recv/3</code></a> function. In fact this function just
   calls that function. So there is a slight bit of additional
   overhead as well.</p>
 
 <h3 class="function"><a name="recvmsg-2">recvmsg/2</a></h3>
 <div class="spec">
 <p><tt>recvmsg(Socket::<a href="#type-erlzmq_socket">erlzmq_socket()</a>, Flags::<a href="#type-erlzmq_send_recv_flags">erlzmq_send_recv_flags()</a>) -&gt; {ok, <a href="#type-erlzmq_data">erlzmq_data()</a>} | <a href="#type-erlzmq_error">erlzmq_error()</a></tt><br></p>
-<p> </p>
 </div><p>Equivalent to <a href="#recv-2"><tt>recv(Socket, Flags)</tt></a>.</p>
 <p>This function exists for zeromq api compatibility and doesn't
   actually provide any different functionality then what you get with
-  the <a docgen-rel="seemfa" docgen-href="erlzmq#recv/3" href="erlzmq.html#recv-3"><code>erlzmq:recv/3</code></a> function. In fact this function just
+  the <a href="erlzmq.html#recv-3"><code>erlzmq:recv/3</code></a> function. In fact this function just
   calls that function. So there is a slight bit of additional
   overhead as well.</p>
 
 <h3 class="function"><a name="send-2">send/2</a></h3>
 <div class="spec">
 <p><tt>send(Socket::<a href="#type-erlzmq_socket">erlzmq_socket()</a>, Binary::binary()) -&gt; ok | <a href="#type-erlzmq_error">erlzmq_error()</a></tt><br></p>
-<p> </p>
 </div><p>Equivalent to <a href="#send-3"><tt>send(Socket, Msg, [])</tt></a>.</p>
 
 
 <h3 class="function"><a name="send-3">send/3</a></h3>
 <div class="spec">
 <p><tt>send(X1::<a href="#type-erlzmq_socket">erlzmq_socket()</a>, Binary::binary(), Flags::<a href="#type-erlzmq_send_recv_flags">erlzmq_send_recv_flags()</a>) -&gt; ok | <a href="#type-erlzmq_error">erlzmq_error()</a></tt><br></p>
-<p> </p>
 </div><p>Send a message on a socket.
   <br>
   <i>For more information see
@@ -224,30 +211,27 @@
 <h3 class="function"><a name="sendmsg-2">sendmsg/2</a></h3>
 <div class="spec">
 <p><tt>sendmsg(Socket::<a href="#type-erlzmq_socket">erlzmq_socket()</a>, Binary::binary()) -&gt; ok | <a href="#type-erlzmq_error">erlzmq_error()</a></tt><br></p>
-<p> </p>
 </div><p>Equivalent to <a href="#send-3"><tt>send(Socket, Msg, [])</tt></a>.</p>
 <p>This function exists for zeromq api compatibility and doesn't
   actually provide any different functionality then what you get with
-  the <a docgen-rel="seemfa" docgen-href="erlzmq#send/2" href="erlzmq.html#send-2"><code>erlzmq:send/2</code></a> function. In fact this function just
+  the <a href="erlzmq.html#send-2"><code>erlzmq:send/2</code></a> function. In fact this function just
   calls that function. So there is a slight bit of additional
   overhead as well.</p>
 
 <h3 class="function"><a name="sendmsg-3">sendmsg/3</a></h3>
 <div class="spec">
 <p><tt>sendmsg(Socket::<a href="#type-erlzmq_socket">erlzmq_socket()</a>, Binary::binary(), Flags::<a href="#type-erlzmq_send_recv_flags">erlzmq_send_recv_flags()</a>) -&gt; ok | <a href="#type-erlzmq_error">erlzmq_error()</a></tt><br></p>
-<p> </p>
 </div><p>Equivalent to <a href="#send-3"><tt>send(Socket, Msg, Flags)</tt></a>.</p>
 <p>This function exists for zeromq api compatibility and doesn't
   actually provide any different functionality then what you get with
-  the <a docgen-rel="seemfa" docgen-href="erlzmq#send/3" href="erlzmq.html#send-3"><code>erlzmq:send/3</code></a> function. In fact this function just
+  the <a href="erlzmq.html#send-3"><code>erlzmq:send/3</code></a> function. In fact this function just
   calls that function. So there is a slight bit of additional
   overhead as well.</p>
 
 <h3 class="function"><a name="setsockopt-3">setsockopt/3</a></h3>
 <div class="spec">
 <p><tt>setsockopt(Socket::<a href="#type-erlzmq_socket">erlzmq_socket()</a>, Name::<a href="#type-erlzmq_sockopt">erlzmq_sockopt()</a>, Value::<a href="#type-erlzmq_sockopt_value">erlzmq_sockopt_value()</a> | binary()) -&gt; ok | <a href="#type-erlzmq_error">erlzmq_error()</a></tt><br></p>
-<p> </p>
-</div><p>Set an <a docgen-rel="seetype" docgen-href="#erlzmq_sockopt/0" href="#type-erlzmq_sockopt">option</a> associated with a socket.
+</div><p>Set an <a href="#type-erlzmq_sockopt">option</a> associated with a socket.
   <br>
   <i>For more information see
   <a href="http://api.zeromq.org/master:zmq_setsockopt">zmq_setsockopt</a>.</i></p>
@@ -255,12 +239,11 @@
 <h3 class="function"><a name="socket-2">socket/2</a></h3>
 <div class="spec">
 <p><tt>socket(Context::<a href="#type-erlzmq_context">erlzmq_context()</a>, Type::<a href="#type-erlzmq_socket_type">erlzmq_socket_type()</a> | [<a href="#type-erlzmq_socket_type">erlzmq_socket_type()</a> | {active, boolean()} | {active_pid, pid()}]) -&gt; {ok, <a href="#type-erlzmq_socket">erlzmq_socket()</a>} | <a href="#type-erlzmq_error">erlzmq_error()</a></tt><br></p>
-<p> </p>
 </div><p>Create a socket.
   <br>
   This functions creates a socket of the given
-  <a docgen-rel="seetype" docgen-href="#erlzmq_socket_type/0" href="#type-erlzmq_socket_type">type</a>, optionally setting it to active mode,
-  and associates it with the given <a docgen-rel="seetype" docgen-href="#erlzmq_context/0" href="#type-erlzmq_context">context</a>.
+  <a href="#type-erlzmq_socket_type">type</a>, optionally setting it to active mode,
+  and associates it with the given <a href="#type-erlzmq_context">context</a>.
   <br>
   If the socket can be created an 'ok' tuple containing a
   <code><a href="#type-erlzmq_socket">erlzmq_socket()</a></code> handle to the created socket is returned;
@@ -277,14 +260,12 @@
 <h3 class="function"><a name="term-1">term/1</a></h3>
 <div class="spec">
 <p><tt>term(Context::<a href="#type-erlzmq_context">erlzmq_context()</a>) -&gt; ok | <a href="#type-erlzmq_error">erlzmq_error()</a></tt><br></p>
-<p> </p>
 </div><p>Equivalent to <a href="#term-2"><tt>term(Context, infinity)</tt></a>.</p>
 
 
 <h3 class="function"><a name="term-2">term/2</a></h3>
 <div class="spec">
 <p><tt>term(Context::<a href="#type-erlzmq_context">erlzmq_context()</a>, Timeout::timeout()) -&gt; ok | <a href="#type-erlzmq_error">erlzmq_error()</a> | {error, {timeout, reference()}}</tt><br></p>
-<p> </p>
 </div><p>Terminate the given context waiting up to Timeout ms.
   <br>
   This function should be called after all sockets associated with
@@ -296,7 +277,6 @@
 <h3 class="function"><a name="version-0">version/0</a></h3>
 <div class="spec">
 <p><tt>version() -&gt; {integer(), integer(), integer()}</tt><br></p>
-<p> </p>
 </div><p>Returns the 0MQ library version.</p>
 <hr>
 

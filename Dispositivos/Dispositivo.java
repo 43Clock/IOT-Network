@@ -21,17 +21,23 @@ public class Dispositivo {
                 toColector.connect("tcp://localhost:3001");
                 toColector.send("auth:"+this.id+";"+this.password);
                 byte[] msg = toColector.recv();
-                String ack = new String(msg);
-                System.out.println(ack);
-                System.out.println("Atualizar estado:\n");
+                String[] ack = new String(msg).split(":");
+                System.out.println(ack[1]);
+                if(ack[0].equals("0")) return;
+                System.out.println("Atualizar estado:");
                 String str;
-                while (true) {
+                boolean flag = true;
+                while (flag) {
                     str = System.console().readLine();
-                    if (str == null) break;
-                    toColector.send("tipo:"+this.id+";"+str);
+                    if (str == null || str.equals("logout")){
+                        toColector.send("logout:"+this.id);
+                        flag = false;
+                    }else {
+                        toColector.send("tipo:"+this.id+";"+str);
+                    }
                     msg = toColector.recv();
-                    ack = new String(msg);
-                    System.out.println("Received: " + ack);
+                    ack = new String(msg).split(":");
+                    System.out.println("Received: " + ack[1]);
                 }
             }
     }

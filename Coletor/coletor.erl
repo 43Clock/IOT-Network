@@ -22,20 +22,25 @@ handle(Devices,Agreg) ->
                     Pass = lists:nth(2,Split),
                     case loginManager:login_and_create(Id,Pass) of
                         ok_register ->
-                            erlzmq:send(Devices,list_to_binary("Dispositivo Registado com sucesso")),
+                            erlzmq:send(Devices,list_to_binary("1:Dispositivo Registado com sucesso")),
                             Agreg ! {ok, list_to_binary("registo:"++ Id)};
                         ok ->
-                            erlzmq:send(Devices,list_to_binary("Login feito com sucesso")),
+                            erlzmq:send(Devices,list_to_binary("1:Login feito com sucesso")),
                             Agreg ! {ok, list_to_binary("login:"++ Id)};
                         _ ->
-                            erlzmq:send(Devices,list_to_binary("Password errada"))
+                            erlzmq:send(Devices,list_to_binary("0:Password errada"))
                     end;
                 "tipo:" ++ Dados ->
                     Split = string:split(Dados,";",all),
                     Id = lists:nth(1,Split),
                     Tipo = lists:nth(2,Split),
                     Agreg ! {ok, list_to_binary("tipo:"++Id++";"++Tipo)},
-                    erlzmq:send(Devices,list_to_binary("Tipo Alterado"))                
+                    erlzmq:send(Devices,list_to_binary("1:Tipo Alterado"));
+
+                "logout:" ++ Id ->
+                    loginManager:logout(Id),
+                    Agreg ! {ok, list_to_binary("logout:"++Id)},
+                    erlzmq:send(Devices,list_to_binary("2:Logging Out"))
             end,
             handle(Devices,Agreg);
         _ -> 
