@@ -8,17 +8,20 @@ public class Dispositivo {
     private String id;
     private String password;
     private String tipo;
+    private int zona;
 
-    public Dispositivo(String id,String password){
+    public Dispositivo(String id,String password, String zona){
         this.id = id;
         this.password = password;
+        this.zona = Integer.parseInt(zona);
     }
 
     public void start(){
         try (ZContext context = new ZContext();
              ZMQ.Socket toColector = context.createSocket(SocketType.REQ))
             {
-                toColector.connect("tcp://localhost:3001");
+                int porta = 3001 + zona*100;
+                toColector.connect("tcp://localhost:"+porta);
                 toColector.send("auth:"+this.id+";"+this.password);
                 byte[] msg = toColector.recv();
                 String[] ack = new String(msg).split(":");

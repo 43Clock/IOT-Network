@@ -1,12 +1,14 @@
 -module(coletor).
--export([run/0]).
+-export([run/1]).
 
-run() -> 
+run(Zona) -> 
+    PortaDispositivo = 3001 + Zona*100, 
+    PortaAgregador = 3002 + Zona*100, 
     {ok,Context} = erlzmq:context(),
     {ok,SocketDevices} = erlzmq:socket(Context,[rep,{active,false}]),
     {ok,SocketAgregador} = erlzmq:socket(Context,[push,{active,false}]),
-    ok = erlzmq:bind(SocketDevices,"tcp://*:3001"),
-    ok = erlzmq:connect(SocketAgregador,"tcp://localhost:3002"),
+    ok = erlzmq:bind(SocketDevices,"tcp://*:"++integer_to_list(PortaDispositivo)),
+    ok = erlzmq:connect(SocketAgregador,"tcp://localhost:"++integer_to_list(PortaAgregador)),
     Resend = spawn(fun()->resend(SocketAgregador) end),
     spawn(fun()->handle(SocketDevices,Resend) end).
 
