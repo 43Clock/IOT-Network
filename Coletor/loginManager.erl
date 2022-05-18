@@ -13,8 +13,8 @@ rpc(Req) ->
                 Res 
     end.
 
-login_and_create(Username, Password) -> 
-    rpc({login,Username,Password}).
+login_and_create(Username, Password, Tipo) ->
+    rpc({login,Username,Password, Tipo}).
 
 logout(Username) -> 
     rpc({logout,Username}).
@@ -26,16 +26,16 @@ online() ->
 
 loop(Map) ->
     receive
-    {{login,Username,Password},From} -> 
+    {{login,Username,Password,Tipo},From} ->
         case maps:is_key(Username,Map) of
             false ->
                 From ! {ok_register, ?MODULE},
-                loop(maps:put(Username,{Password,true}, Map));
+                loop(maps:put(Username,{Password,Tipo,true}, Map));
             true ->
                 case maps:get(Username,Map) of
-                    {Password,_} ->
+                    {Password,Tipo,_} ->
                         From ! {ok,?MODULE},
-                        loop(maps:update(Username,{Password,true},Map));
+                        loop(maps:update(Username,{Password,Tipo,true},Map));
                     _ ->
                         From ! {invalid, ?MODULE},
                         loop(Map)
@@ -48,12 +48,12 @@ loop(Map) ->
                 loop(Map);
             true ->
                 From ! {ok,?MODULE},
-                {Password,_} = maps:get(Username,Map),
-                loop(maps:update(Username,{Password,false},Map))
+                {Password,Tipo,_} = maps:get(Username,Map),
+                loop(maps:update(Username,{Password,Tipo,false},Map))
         end;
 
     {{online},From} -> 
-        Filtered = maps:filter(fun(_,{_,B})->B end,Map),
+        Filtered = maps:filter(fun(_,{_,_,B})->B end,Map),
         List = maps:keys(Filtered),
         From ! {List,?MODULE},
         loop(Map)

@@ -10,9 +10,10 @@ public class Dispositivo {
     private String tipo;
     private int zona;
 
-    public Dispositivo(String id,String password, String zona){
+    public Dispositivo(String id,String password,String tipo,String zona){
         this.id = id;
         this.password = password;
+        this.tipo = tipo;
         this.zona = Integer.parseInt(zona);
     }
 
@@ -22,7 +23,7 @@ public class Dispositivo {
             {
                 int porta = 3001 + zona*100;
                 toColector.connect("tcp://localhost:"+porta);
-                toColector.send("auth:"+this.id+";"+this.password);
+                toColector.send("auth:"+this.id+";"+this.password+";"+this.tipo);
                 byte[] msg = toColector.recv();
                 String[] ack = new String(msg).split(":");
                 System.out.println(ack[1]);
