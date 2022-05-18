@@ -37,7 +37,7 @@ public class Dispositivo {
                         toColector.send("logout:"+this.id);
                         flag = false;
                     }else {
-                        toColector.send("tipo:"+this.id+";"+str);
+                        toColector.send("evento:"+this.id+";"+str);
                     }
                     msg = toColector.recv();
                     ack = new String(msg).split(":");

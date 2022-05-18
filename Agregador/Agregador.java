@@ -17,13 +17,16 @@ public class Agregador {
     private Set<String> totalDispositivos;
     private Set<String> dispositivosOnlineZona;
     private Map<String,Set<String>> tiposOnlineZona;
-    private Map<String,Set<String>> eventosZona;
     private Map<String,Integer> totalEventosOcorridosZona;
+    private Map<String,Integer> recordTipos;
 
 
     public Agregador(String zona,List<Integer> vizinhos){
+        this.totalDispositivos = new HashSet<>();
         this.dispositivosOnlineZona = new HashSet<>();
         this.tiposOnlineZona = new HashMap<>();
+        this.totalEventosOcorridosZona = new HashMap<>();
+        this.recordTipos = new HashMap<>();
         this.zona = Integer.parseInt(zona);
         this.vizinhos = new ArrayList<>();
         this.vizinhos.addAll(vizinhos);
@@ -61,6 +64,7 @@ public class Agregador {
                 }
                 System.out.println("Dispositivos:"+this.dispositivosOnlineZona);
                 System.out.println("Tipos:"+this.tiposOnlineZona);
+                System.out.println("Eventos:" + this.totalEventosOcorridosZona);
             }
         }
     }
@@ -79,30 +83,39 @@ public class Agregador {
             }
             this.tiposOnlineZona.get(tipo).add(id);
 
+            if(!this.recordTipos.containsKey(tipo)){
+                notifyRecordTipo(tipo,1);
+                this.recordTipos.put(tipo,1);
+            }
+            else if(this.recordTipos.get(tipo)<this.tiposOnlineZona.get(tipo).size()){
+                int quant = this.tiposOnlineZona.get(tipo).size();
+                notifyRecordTipo(tipo,quant);
+                this.recordTipos.replace(tipo, quant);
+            }
             return true;
-
-//            for(String k: this.tiposOnlineZona.keySet()){
-//                if(this.tiposOnlineZona.get(k).contains(split[0])){
-//                    this.tiposOnlineZona.get(k).remove(split[0]);
-//                    break;
-//                }
-//            }
         }
 
         if(msg.startsWith("evento")){
-            if(!this.totalEventosOcorridosZona.containsKey(split[1])){
-                this.totalEventosOcorridosZona.put(split[1], 1);
+            String[] split = msg.split(":")[1].split(";");
+            String id = split[0];
+            String evento = split[1];
+
+            if(!this.totalEventosOcorridosZona.containsKey(evento)){
+                this.totalEventosOcorridosZona.put(evento, 1);
             } else {
-                this.totalEventosOcorridosZona.replace(split[1],this.totalEventosOcorridosZona.get(split[1])+1);
+                this.totalEventosOcorridosZona.replace(split[1],this.totalEventosOcorridosZona.get(evento)+1);
             }
         }
+
         if(msg.startsWith("logout")){
             String id = msg.split(":")[1];
             this.dispositivosOnlineZona.remove(id);
             for(String k: this.tiposOnlineZona.keySet()) {
                 if (this.tiposOnlineZona.get(k).contains(id)) {
                     this.tiposOnlineZona.get(k).remove(id);
-                    notifyDisconnect(id,k);
+                    if(this.tiposOnlineZona.get(k).size() == 0){
+                        notifyNoDevicesTypeOnline(k);
+                    }
                     break;
                 }
             }
@@ -131,11 +144,13 @@ public class Agregador {
         return this.totalEventosOcorridosZona.get(tipo);
     }
 
-    public void notifyDisconnect(String id,String tipo){
-        System.out.println("Dispositivo "+id+" do tipo "+ tipo+" desconectou-se");
+    public void notifyNoDevicesTypeOnline(String tipo){
+        System.out.println("Não existem dispositivos do tipo '"+ tipo+"' online.");
     }
 
-    //@TODO falta a 2ª notificação
+    public void notifyRecordTipo(String tipo, int quant){
+        System.out.println("Record de dispositivos do tipo '" + tipo + "' atingido ("+quant+" dispostivos)·");
+    }
 
 }
 

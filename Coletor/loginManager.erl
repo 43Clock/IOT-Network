@@ -1,5 +1,5 @@
 -module(loginManager).
--export([start/0,login_and_create/2,logout/1,online/0]).
+-export([start/0,login_and_create/3,logout/1,online/0]).
 
 start() -> 
     %register(login_manager,spawn(fun() -> loop() end)).
