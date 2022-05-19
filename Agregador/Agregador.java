@@ -4,32 +4,32 @@ import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Agregador {
     private int zona;
     private List<Integer> vizinhos;
     private Set<String> totalDispositivos;
     private Set<String> dispositivosOnlineZona;
-    private Map<String,Set<String>> tiposOnlineZona;
-    private Map<String,Integer> totalEventosOcorridosZona;
+    private Set<String> dispositivosOnlineGlobal; //Partilhar
+    private Map<String,Set<String>> tiposOnline;
+    private Map<String,Integer> totalEventosOcorridos; //Partilhar
     private Map<String,Integer> recordTipos;
+    private int onlineVersion;
 
 
     public Agregador(String zona,List<Integer> vizinhos){
         this.totalDispositivos = new HashSet<>();
         this.dispositivosOnlineZona = new HashSet<>();
-        this.tiposOnlineZona = new HashMap<>();
-        this.totalEventosOcorridosZona = new HashMap<>();
+        this.dispositivosOnlineGlobal = new HashSet<>();
+        this.tiposOnline = new HashMap<>();
+        this.totalEventosOcorridos = new HashMap<>();
         this.recordTipos = new HashMap<>();
         this.zona = Integer.parseInt(zona);
         this.vizinhos = new ArrayList<>();
         this.vizinhos.addAll(vizinhos);
+        this.onlineVersion = 0;
     }
 
     public void start(){
@@ -45,8 +45,8 @@ public class Agregador {
             //Abre porta para os Agregadores vizinhos se ligarem
             receive.bind("tcp://*:"+portaAgregador);
             //Não sei se é preciso isto
-            //receive.subscribe("".getBytes());
-            Thread t = new UpdatesHandler(zona, vizinhos, dispositivosOnlineZona, tiposOnlineZona, receive, inform);
+            receive.subscribe("".getBytes());
+            Thread t = new UpdatesHandler(zona, vizinhos, dispositivosOnlineGlobal, tiposOnline,this.onlineVersion, receive, inform);
             t.start();
             
             for(int v : this.vizinhos)
@@ -59,12 +59,24 @@ public class Agregador {
                 String str = new String(msg);
                 //Se for um login/logout/registo tem de propagar logo a info
                 if (this.processMessage(str)){
-                    System.out.println("Send to Super Node to update");
-                    inform.send("Login");
+                    System.out.println("Send to update");
+                    this.onlineVersion += 1;
+                    StringBuilder updateLogin = new StringBuilder("online:").append(this.onlineVersion);
+//                    for(int v: this.vizinhos){
+//                        updateLogin.append(v).append(",");
+//                    }
+//                    updateLogin.append(this.zona).append("|");
+                    updateLogin.append("|");
+                    List<String> temp = new ArrayList<>(this.dispositivosOnlineGlobal);
+                    for(int i = 0;i<temp.size()-1;i++){
+                        updateLogin.append(temp.get(i)).append(",");
+                    }
+                    updateLogin.append(temp.get(temp.size()-1));
+                    inform.send(updateLogin.toString());
                 }
                 System.out.println("Dispositivos:"+this.dispositivosOnlineZona);
-                System.out.println("Tipos:"+this.tiposOnlineZona);
-                System.out.println("Eventos:" + this.totalEventosOcorridosZona);
+                System.out.println("Tipos:"+this.tiposOnline);
+                System.out.println("Eventos:" + this.totalEventosOcorridos);
             }
         }
     }
@@ -77,18 +89,19 @@ public class Agregador {
             String tipo = split[1];
 
             this.dispositivosOnlineZona.add(id);
+            this.dispositivosOnlineGlobal.add(id);
             this.totalDispositivos.add(id);
-            if(!this.tiposOnlineZona.containsKey(split[1])){
-                this.tiposOnlineZona.put(tipo,new HashSet<>());
+            if(!this.tiposOnline.containsKey(split[1])){
+                this.tiposOnline.put(tipo,new HashSet<>());
             }
-            this.tiposOnlineZona.get(tipo).add(id);
+            this.tiposOnline.get(tipo).add(id);
 
             if(!this.recordTipos.containsKey(tipo)){
                 notifyRecordTipo(tipo,1);
                 this.recordTipos.put(tipo,1);
             }
-            else if(this.recordTipos.get(tipo)<this.tiposOnlineZona.get(tipo).size()){
-                int quant = this.tiposOnlineZona.get(tipo).size();
+            else if(this.recordTipos.get(tipo)<this.tiposOnline.get(tipo).size()){
+                int quant = this.tiposOnline.get(tipo).size();
                 notifyRecordTipo(tipo,quant);
                 this.recordTipos.replace(tipo, quant);
             }
@@ -100,20 +113,21 @@ public class Agregador {
             String id = split[0];
             String evento = split[1];
 
-            if(!this.totalEventosOcorridosZona.containsKey(evento)){
-                this.totalEventosOcorridosZona.put(evento, 1);
+            if(!this.totalEventosOcorridos.containsKey(evento)){
+                this.totalEventosOcorridos.put(evento, 1);
             } else {
-                this.totalEventosOcorridosZona.replace(split[1],this.totalEventosOcorridosZona.get(evento)+1);
+                this.totalEventosOcorridos.replace(split[1],this.totalEventosOcorridos.get(evento)+1);
             }
         }
 
         if(msg.startsWith("logout")){
             String id = msg.split(":")[1];
             this.dispositivosOnlineZona.remove(id);
-            for(String k: this.tiposOnlineZona.keySet()) {
-                if (this.tiposOnlineZona.get(k).contains(id)) {
-                    this.tiposOnlineZona.get(k).remove(id);
-                    if(this.tiposOnlineZona.get(k).size() == 0){
+            this.dispositivosOnlineGlobal.remove(id);
+            for(String k: this.tiposOnline.keySet()) {
+                if (this.tiposOnline.get(k).contains(id)) {
+                    this.tiposOnline.get(k).remove(id);
+                    if(this.tiposOnline.get(k).size() == 0){
                         notifyNoDevicesTypeOnline(k);
                     }
                     break;
@@ -126,7 +140,7 @@ public class Agregador {
 
     //@TODO mudar para o global quando estiver feito
     public int onlineTipo(String tipo){
-        return this.tiposOnlineZona.get(tipo).size();
+        return this.tiposOnline.get(tipo).size();
     }
 
     //@TODO mudar para o global quando estiver feito
@@ -141,7 +155,7 @@ public class Agregador {
 
     //@TODO mudar para o global quando estiver feito
     public int totalEventosTipo(String tipo){
-        return this.totalEventosOcorridosZona.get(tipo);
+        return this.totalEventosOcorridos.get(tipo);
     }
 
     public void notifyNoDevicesTypeOnline(String tipo){
@@ -159,26 +173,50 @@ class UpdatesHandler extends Thread {
     private List<Integer> vizinhos;
     private Set<String> dispositivosOnline;
     private Map<String,Set<String>> tipos;
+    private int onlineVersion;
     private ZMQ.Socket receive;
     private ZMQ.Socket inform;
-    
-    UpdatesHandler(int zona, List<Integer> vizinhos,Set<String> dispositivosOnline
-                  ,Map<String,Set<String>> tipos,ZMQ.Socket receive,ZMQ.Socket inform)
-    {
+
+
+    public UpdatesHandler(int zona, List<Integer> vizinhos, Set<String> dispositivosOnline, Map<String, Set<String>> tipos, int onlineVersion, ZMQ.Socket receive, ZMQ.Socket inform) {
         this.zona = zona;
         this.vizinhos = vizinhos;
         this.dispositivosOnline = dispositivosOnline;
         this.tipos = tipos;
+        this.onlineVersion = onlineVersion;
         this.receive = receive;
         this.inform = inform;
     }
-    
+
     public void run(){
         while(true){
             byte[] msg = this.receive.recv();
+            System.out.println(this.onlineVersion);
             String str = new String(msg);
             System.out.println(str);
+            String[] split = str.split(":");
+            switch (split[0]){
+                case "online":
+                    String[] temp = split[1].split("\\|");
+                    int versao = Integer.parseInt(temp[0]);
+                    if (versao > this.onlineVersion) {
+                        this.onlineVersion = versao;
+                        updateOnline(temp[1]);
+                        inform.send(str);
+                        System.out.println(dispositivosOnline);
+                    }
+            }
         }
+    }
+
+    public void updateOnline(String estado){
+        Set<String> estadoSet = new HashSet<>(Arrays.asList(estado.split(",")));
+        for(String s: estadoSet)
+            this.dispositivosOnline.add(s);
+        for(String s : this.dispositivosOnline)
+            if(!estadoSet.contains(s))
+                this.dispositivosOnline.remove(s);
+
     }
 
 }
