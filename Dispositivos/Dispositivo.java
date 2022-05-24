@@ -4,6 +4,12 @@ import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
 import org.zeromq.ZContext;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+
 public class Dispositivo {
     private String id;
     private String password;
@@ -18,14 +24,14 @@ public class Dispositivo {
     }
 
     public void start(){
-        try (ZContext context = new ZContext();
-             ZMQ.Socket toColector = context.createSocket(SocketType.REQ))
+        int porta = 3001 + zona*100;
+        try (Socket toColector = new Socket("localhost",porta))
             {
-                int porta = 3001 + zona*100;
-                toColector.connect("tcp://localhost:"+porta);
-                toColector.send("auth:"+this.id+";"+this.password+";"+this.tipo);
-                byte[] msg = toColector.recv();
-                String[] ack = new String(msg).split(":");
+                PrintWriter out = new PrintWriter(toColector.getOutputStream(), true);
+                BufferedReader in = new BufferedReader(new InputStreamReader(toColector.getInputStream()));
+                out.println("auth:"+this.id+";"+this.password+";"+this.tipo);
+                String msg = in.readLine();
+                String[] ack = msg.split(":");
                 System.out.println(ack[1]);
                 if(ack[0].equals("0")) return;
                 System.out.println("Atualizar estado:");
@@ -34,15 +40,17 @@ public class Dispositivo {
                 while (flag) {
                     str = System.console().readLine();
                     if (str == null || str.equals("logout")){
-                        toColector.send("logout:"+this.id);
+                        out.println("logout");
                         flag = false;
                     }else {
-                        toColector.send("evento:"+this.id+";"+str);
+                        out.println("evento:"+str);
                     }
-                    msg = toColector.recv();
-                    ack = new String(msg).split(":");
+                    msg = in.readLine();
+                    ack = msg.split(":");
                     System.out.println("Received: " + ack[1]);
                 }
-            }
+            } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

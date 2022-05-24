@@ -37,7 +37,7 @@ public class Agregador {
         try (ZContext context = new ZContext();
              ZMQ.Socket fromColector = context.createSocket(SocketType.PULL);
              ZMQ.Socket inform = context.createSocket(SocketType.PUB);
-             ZMQ.Socket receive = context.createSocket(SocketType.SUB);
+             ZMQ.Socket receive = context.createSocket(SocketType.SUB);//Mudar para push pull
              ZMQ.Socket toClient = context.createSocket(SocketType.PUB))
         {
             this.toClient = toClient;

@@ -1,3 +1,3 @@
 #!/bin/bash
 
-erl -pa ebin -eval "loginManager:start(),coletor:run($1)"
+erl -pa ebin -eval "coletorRun:main($1)"
