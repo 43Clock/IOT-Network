@@ -56,7 +56,6 @@ handle(Devices, Agreg, Username) ->
                     loginManager:logout(Username),
                     Agreg ! {ok, list_to_binary("logout:"++Username)},
                     gen_tcp:send(Devices,list_to_binary("2:Logging Out\n"))
-                
             end;
         {tcp_closed, _} -> 
             io:format("Logout ~p\n",[Username]),
@@ -67,6 +66,11 @@ handle(Devices, Agreg, Username) ->
             io:format("Logout ~p\n",[Username]),
             loginManager:logout(Username),
             Agreg ! {ok, list_to_binary("logout:"++Username)}
+
+        after 5000 ->
+            io:format("Away ~p\n",[Username]),
+            Agreg ! {ok, list_to_binary("inativo:"++Username)},
+            handle(Devices,Agreg,Username)
 
     end.
 

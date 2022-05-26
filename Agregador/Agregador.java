@@ -6,27 +6,28 @@ import org.zeromq.ZMQ;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 public class Agregador {
     private int zona;
     private List<Integer> vizinhos;
-    private Set<String> totalDispositivos;
-    private Set<String> dispositivosOnlineZona;
-    private Set<String> dispositivosOnlineGlobal; //Partilhar
-    private Map<String,Set<String>> tiposOnline;
-    private Map<String,Integer> totalEventosOcorridos; //Partilhar
-    private Map<String,Integer> recordTipos;
+    private Set<String> totalDispositivos; //local
+    private Set<String> dispositivosOnlineZona; //local
+    private Set<String> dispositivosOnlineCRDT; //Partilhar, mudar para map para ter tb os tipos e ser um crdt
+    private Set<String> dispositivosAtivosCRDT; //Partilhar
+    private Map<String,Integer> totalEventosOcorridosCRDT; //Partilhar
+    private Map<String,Set<String>> tiposOnline; //local
+    private Map<String,Integer> recordTipos; //local
     private AtomicInteger onlineVersion;
     private ZMQ.Socket toClient;
 
     public Agregador(String zona,List<Integer> vizinhos){
         this.totalDispositivos = new HashSet<>();
         this.dispositivosOnlineZona = new HashSet<>();
-        this.dispositivosOnlineGlobal = new HashSet<>();
-        this.tiposOnline = new HashMap<>();
-        this.totalEventosOcorridos = new HashMap<>();
+        this.dispositivosOnlineCRDT = new HashSet<>();
+        this.totalEventosOcorridosCRDT = new HashMap<>();
+        this.dispositivosAtivosCRDT = new HashSet<>();
         this.recordTipos = new HashMap<>();
+        this.tiposOnline = new HashMap<>();
         this.zona = Integer.parseInt(zona);
         this.vizinhos = new ArrayList<>();
         this.vizinhos.addAll(vizinhos);
@@ -36,8 +37,8 @@ public class Agregador {
     public void start(){
         try (ZContext context = new ZContext();
              ZMQ.Socket fromColector = context.createSocket(SocketType.PULL);
-             ZMQ.Socket inform = context.createSocket(SocketType.PUB);
-             ZMQ.Socket receive = context.createSocket(SocketType.SUB);//Mudar para push pull
+             ZMQ.Socket inform = context.createSocket(SocketType.PUSH);
+             ZMQ.Socket receive = context.createSocket(SocketType.PULL);
              ZMQ.Socket toClient = context.createSocket(SocketType.PUB))
         {
             this.toClient = toClient;
@@ -49,9 +50,7 @@ public class Agregador {
             //Abre porta para os Agregadores vizinhos se ligarem
             receive.bind("tcp://*:"+portaAgregador);
             toClient.bind("tcp://*:"+portaCliente);
-            //Não sei se é preciso isto
-            receive.subscribe("".getBytes());
-            Thread t = new UpdatesHandler(zona, vizinhos, dispositivosOnlineGlobal, tiposOnline,this.onlineVersion, receive, inform);
+            Thread t = new UpdatesHandler(zona, vizinhos, dispositivosOnlineCRDT, tiposOnline,this.onlineVersion, receive, inform);
             t.start();
             
             for(int v : this.vizinhos)
@@ -68,18 +67,19 @@ public class Agregador {
                     this.onlineVersion.addAndGet(1);
                     StringBuilder updateLogin = new StringBuilder("online:").append(this.onlineVersion);
                     updateLogin.append("|");
-                    List<String> temp = new ArrayList<>(this.dispositivosOnlineGlobal);
+                    List<String> temp = new ArrayList<>(this.dispositivosOnlineCRDT);
                     for(int i = 0;i<temp.size()-1;i++){
                         updateLogin.append(temp.get(i)).append(",");
                     }
                     if(temp.size() > 0)
                         updateLogin.append(temp.get(temp.size()-1));
-                    inform.send(updateLogin.toString());
+                    for (int ignored : this.vizinhos)
+                        inform.send(updateLogin.toString());
                 }
                 System.out.println("Dispositivos:"+this.dispositivosOnlineZona);
-                System.out.println("Dispositivos Global:"+this.dispositivosOnlineGlobal);
+                System.out.println("Dispositivos Global:"+this.dispositivosOnlineCRDT);
                 System.out.println("Tipos:"+this.tiposOnline);
-                System.out.println("Eventos:" + this.totalEventosOcorridos);
+                System.out.println("Eventos:" + this.totalEventosOcorridosCRDT);
             }
         }
     }
@@ -90,14 +90,18 @@ public class Agregador {
             String id = split[0];
             String tipo = split[1];
 
+            //Adiciona aos dispositivos online
             this.dispositivosOnlineZona.add(id);
-            this.dispositivosOnlineGlobal.add(id);
+            this.dispositivosOnlineCRDT.add(id);
             this.totalDispositivos.add(id);
+
+            //Se não existir key com o tipo, cria
             if(!this.tiposOnline.containsKey(split[1])){
                 this.tiposOnline.put(tipo,new HashSet<>());
             }
             this.tiposOnline.get(tipo).add(id);
 
+            //Verifica se é record de online
             if(!this.recordTipos.containsKey(tipo)){
                 notifyRecordTipo(tipo,1);
                 this.recordTipos.put(tipo,1);
@@ -107,6 +111,9 @@ public class Agregador {
                 notifyRecordTipo(tipo,quant);
                 this.recordTipos.replace(tipo, quant);
             }
+
+            //Adiciona a ativos
+            this.dispositivosAtivosCRDT.add(id);
             return true;
         }
 
@@ -115,17 +122,26 @@ public class Agregador {
             String id = split[0];
             String evento = split[1];
 
-            if(!this.totalEventosOcorridos.containsKey(evento)){
-                this.totalEventosOcorridos.put(evento, 1);
+            if(!this.totalEventosOcorridosCRDT.containsKey(evento)){
+                this.totalEventosOcorridosCRDT.put(evento, 1);
             } else {
-                this.totalEventosOcorridos.replace(split[1],this.totalEventosOcorridos.get(evento)+1);
+                this.totalEventosOcorridosCRDT.replace(split[1],this.totalEventosOcorridosCRDT.get(evento)+1);
             }
+
+            //Adiciona aos ativos caso não esteja
+            this.dispositivosAtivosCRDT.add(id);
+        }
+
+        if(msg.startsWith("inativo")){
+            String id = msg.split(":")[1];
+            this.dispositivosAtivosCRDT.remove(id);
+            System.out.println(this.dispositivosAtivosCRDT);
         }
 
         if(msg.startsWith("logout")){
             String id = msg.split(":")[1];
             this.dispositivosOnlineZona.remove(id);
-            this.dispositivosOnlineGlobal.remove(id);
+            this.dispositivosOnlineCRDT.remove(id);
             for(String k: this.tiposOnline.keySet()) {
                 if (this.tiposOnline.get(k).contains(id)) {
                     this.tiposOnline.get(k).remove(id);
@@ -135,6 +151,10 @@ public class Agregador {
                     break;
                 }
             }
+
+            //Remove dos ativos
+            this.dispositivosAtivosCRDT.remove(id);
+
             return true;
         }
         return false;
@@ -157,7 +177,7 @@ public class Agregador {
 
     //@TODO mudar para o global quando estiver feito
     public int totalEventosTipo(String tipo){
-        return this.totalEventosOcorridos.get(tipo);
+        return this.totalEventosOcorridosCRDT.get(tipo);
     }
 
     public void notifyNoDevicesTypeOnline(String tipo){
