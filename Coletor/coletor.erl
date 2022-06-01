@@ -67,7 +67,7 @@ handle(Devices, Agreg, Username) ->
             loginManager:logout(Username),
             Agreg ! {ok, list_to_binary("logout:"++Username)}
 
-        after 5000 ->
+        after 15000 ->
             io:format("Away ~p\n",[Username]),
             Agreg ! {ok, list_to_binary("inativo:"++Username)},
             handle(Devices,Agreg,Username)
