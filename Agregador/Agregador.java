@@ -16,7 +16,6 @@ public class Agregador {
     private Map<Integer,Map<String,Set<String>>> dispositivosOnlineCRDT; //Partilhar, zona->tipo->lista de ids
     private Map<Integer,Set<String>> dispositivosAtivosCRDT; //Partilhar
     private Map<Integer,Map<String,Integer>> totalEventosOcorridosCRDT; //Partilhar, zona->tipo->quantidade
-    private Set<String> totalDispositivos; //local
     private Map<String,Integer> recordTipos; //local
     private AtomicInteger onlineVersion;
     private ZMQ.Socket toClient;
@@ -32,7 +31,6 @@ public class Agregador {
         this.totalEventosOcorridosCRDT = new HashMap<>();
         //Inicializa o mapa para a zona em questao
         this.totalEventosOcorridosCRDT.put(this.zona,new HashMap<>());
-        this.totalDispositivos = new HashSet<>();
         this.recordTipos = new HashMap<>();
         this.vizinhos = new ArrayList<>();
         this.vizinhos.addAll(vizinhos);
@@ -126,9 +124,6 @@ public class Agregador {
             String tipo = split[1];
             Map<String, Set<String>> mapZone = this.dispositivosOnlineCRDT.get(this.zona);
 
-            //Adiciona aos dispositivos totais
-            this.totalDispositivos.add(id);
-
             //Se não existir key com o tipo, cria
             if(!mapZone.containsKey(split[1])){
                 mapZone.put(tipo,new HashSet<>());
@@ -145,6 +140,13 @@ public class Agregador {
                 notifyRecordTipo(tipo,quant);
                 this.recordTipos.replace(tipo, quant);
             }
+
+            //Verifica percentagem
+            int percentagem = getTotalDispositivosZona() * 100 / getTotalDispositivos();
+            while(percentagem %10 != 0)
+                percentagem--;
+            notificaAcimaDe(percentagem);
+            notificaAbaixoDe(percentagem+10);
 
             //Adiciona a ativos
             this.dispositivosAtivosCRDT.get(this.zona).add(id);
@@ -185,12 +187,30 @@ public class Agregador {
                     break;
                 }
 
+            //Verifica percentagem
+            int percentagem = getTotalDispositivosZona() * 100 / getTotalDispositivos();
+            while(percentagem %10 != 0)
+                percentagem--;
+            notificaAcimaDe(percentagem);
+            notificaAbaixoDe(percentagem+10);
+
             //Remove dos ativos
             this.dispositivosAtivosCRDT.get(this.zona).remove(id);
             return true;
         }
 
         return false;
+    }
+
+    public int getTotalDispositivos(){
+        int contador = 0;
+        for(Map<String, Set<String>> zona:this.dispositivosOnlineCRDT.values())
+            contador += zona.values().stream().map(Set::size).reduce(0, Integer::sum);
+        return contador;
+    }
+
+    public int getTotalDispositivosZona(){
+        return this.dispositivosOnlineCRDT.get(this.zona).values().stream().map(Set::size).reduce(0, Integer::sum);
     }
 
     public int onlineTipo(String tipo){
@@ -225,11 +245,25 @@ public class Agregador {
     }
 
     public void notifyNoDevicesTypeOnline(String tipo){
-        this.toClient.send("Não existem dispositivos do tipo '"+ tipo+"' online.");
+        this.toClient.send("online-Não existem dispositivos do tipo '"+ tipo+"' online.");
     }
 
     public void notifyRecordTipo(String tipo, int quant){
-        this.toClient.send("Record de dispositivos do tipo '" + tipo + "' atingido ("+quant+" dispostivos)·");
+        this.toClient.send("record-Record de dispositivos do tipo '" + tipo + "' atingido ("+quant+" dispostivos)·");
+    }
+
+    public void notificaAcimaDe(int percentagem){
+        while(percentagem >0){
+            this.toClient.send(percentagem+"-Percentagem de dispositivos passou os "+percentagem+"%.");
+            percentagem-=10;
+        }
+    }
+
+    public void notificaAbaixoDe(int percentagem){
+        while(percentagem < 100){
+            this.toClient.send(percentagem+"-Percentagem de dispositivos desceu dos "+percentagem+"%.");
+            percentagem+=10;
+        }
     }
 
 }
@@ -286,6 +320,7 @@ class UpdatesHandler extends Thread {
                 default:
                     break;
             }
+            //@TODO falta fazer a cena das percentagens para quando recebe info de login de outros agregadores
             //@TODO falta reenviar para os vizinhos e evitar que repita para o source da mensagem
         }
     }
