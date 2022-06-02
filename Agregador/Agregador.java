@@ -5,6 +5,9 @@ import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Agregador {
@@ -52,12 +55,22 @@ public class Agregador {
             //Abre porta para os Agregadores vizinhos se ligarem
             receive.bind("tcp://*:"+portaAgregador);
             toClient.bind("tcp://*:"+portaCliente);
-            Thread t = new UpdatesHandler(zona, vizinhos, dispositivosOnlineCRDT, receive, inform);
+
+            //Thread que trata de receber mensagens dos outros agregadores
+            Thread t = new UpdatesHandler(zona, vizinhos, dispositivosOnlineCRDT,dispositivosAtivosCRDT,totalEventosOcorridosCRDT, receive, inform);
             t.start();
-            
+
             for(int v : this.vizinhos)
                 //Conecta-se aos agregadores vizinhos
                 inform.connect("tcp://localhost:"+(3003+v*100));
+
+            //Scheduler para mandar updates os outros agregadores
+            ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+            executor.scheduleAtFixedRate(()->{
+                for(int ignore: this.vizinhos)
+                    inform.send(this.serializeAtivos());
+                    inform.send(this.serializeEventos());
+            },15,15, TimeUnit.SECONDS);
             
             //Ciclo para receber as alterações de estados e de login por parte do coletor
             while(true){
@@ -85,6 +98,23 @@ public class Agregador {
             for(String s:entry.getValue())
                 temp.add(s);
             sj.add(temp.toString());
+        }
+        return sj.toString();
+    }
+
+    private String serializeAtivos(){
+        //ativos-1:a,b,c
+        StringJoiner sj = new StringJoiner(",", "ativos-" + this.zona + ":", "");
+        for(String disp : this.dispositivosAtivosCRDT.get(this.zona))
+            sj.add(disp);
+        return sj.toString();
+    }
+
+    private String serializeEventos(){
+        //eventos-1:evento1-x;evento2-y
+        StringJoiner sj = new StringJoiner(";","eventos-"+this.zona+":","");
+        for (Map.Entry<String, Integer> entry : this.totalEventosOcorridosCRDT.get(this.zona).entrySet()) {
+            sj.add(entry.getKey()+"-"+entry.getValue());
         }
         return sj.toString();
     }
@@ -208,13 +238,17 @@ class UpdatesHandler extends Thread {
     private int zona;
     private List<Integer> vizinhos;
     private Map<Integer,Map<String,Set<String>>> dispositivosOnlineCRDT;
+    private Map<Integer,Set<String>> dispositivosAtivosCRDT;
+    private Map<Integer,Map<String,Integer>> totalEventosOcorridosCRDT;
     private ZMQ.Socket receive;
     private ZMQ.Socket inform;
 
-    public UpdatesHandler(int zona, List<Integer> vizinhos, Map<Integer, Map<String, Set<String>>> dispositivosOnlineCRDT, ZMQ.Socket receive, ZMQ.Socket inform) {
+    public UpdatesHandler(int zona, List<Integer> vizinhos, Map<Integer, Map<String, Set<String>>> dispositivosOnlineCRDT, Map<Integer, Set<String>> dispositivosAtivosCRDT, Map<Integer, Map<String, Integer>> totalEventosOcorridosCRDT, ZMQ.Socket receive, ZMQ.Socket inform) {
         this.zona = zona;
         this.vizinhos = vizinhos;
         this.dispositivosOnlineCRDT = dispositivosOnlineCRDT;
+        this.dispositivosAtivosCRDT = dispositivosAtivosCRDT;
+        this.totalEventosOcorridosCRDT = totalEventosOcorridosCRDT;
         this.receive = receive;
         this.inform = inform;
     }
@@ -222,35 +256,70 @@ class UpdatesHandler extends Thread {
     public void run(){
         while(true){
             //online-1:tipo1->a,b;tipo2->c,d
+            //ativos-1:a,b,c
+            //eventos-1:evento1-x;evento2-y
             byte[] msg = this.receive.recv();
             String str = new String(msg);
+            System.out.println("Received: "+str);
             String[] split = str.split(":");
             String[] tipoZona = split[0].split("-");
             switch (tipoZona[0]){
                 case "online":
-                    mergeDispositivosOnlineCRDT(Integer.parseInt(tipoZona[1]), deserialize(split[1]));
-                    System.out.println("CRDT: " + this.dispositivosOnlineCRDT);
+                    if(split.length>1){
+                        mergeDispositivosOnlineCRDT(Integer.parseInt(tipoZona[1]), deserializeOnline(split[1]));
+                        System.out.println("CRDT-Online: " + this.dispositivosOnlineCRDT);
+                    }
+                    break;
+                case "ativos":
+                    if(split.length>1){
+                        mergeDispositivosAtivosCRDT(Integer.parseInt(tipoZona[1]), deserializeAtivos(split[1]));
+                    }else{
+                        mergeDispositivosAtivosCRDT(Integer.parseInt(tipoZona[1]), new HashSet<>());
+                    }
+                    System.out.println("CRDT-Ativos: " + this.dispositivosAtivosCRDT);
+                    break;
+                case "eventos":
+                    if(split.length>1){
+                        mergeEventosCRDT(Integer.parseInt(tipoZona[1]), deserializeEventos(split[1]));
+                    }
+                    System.out.println("CRDT-Eventos: " + this.totalEventosOcorridosCRDT);
+                default:
                     break;
             }
             //@TODO falta reenviar para os vizinhos e evitar que repita para o source da mensagem
         }
     }
 
-    public Map<String,Set<String>> deserialize(String input){
+    public Map<String,Set<String>> deserializeOnline(String input){
         //tipo1->a,b;tipo2->c,d
         Map<String, Set<String>> result = new HashMap<>();
         String[] tipos = input.split(";");
         for(String tipo:tipos){
             String[] split = tipo.split("->");
-            result.put(split[0],new HashSet<>());
-            String[] dispositivos = split[1].split(",");
-            if(dispositivos.length == 1)
-                result.get(split[0]).add(dispositivos[0]);
-            else
+            result.put(split[0], new HashSet<>());
+            if(split.length > 1){
+                String[] dispositivos = split[1].split(",");
                 for(String dispositivo:dispositivos)
                     result.get(split[0]).add(dispositivo);
+            }
         }
         return result;
+    }
+
+    public Set<String> deserializeAtivos(String input){
+        String[] disp = input.split(",");
+        return new HashSet<>(Arrays.asList(disp));
+    }
+
+    public Map<String, Integer> deserializeEventos(String input) {
+        //evento1-x;evento2-y
+        Map<String, Integer> res = new HashMap<>();
+        String[] eventos = input.split(";");
+        for(String evento: eventos){
+            String[] split = evento.split("-");
+            res.put(split[0],Integer.parseInt(split[1]));
+        }
+        return res;
     }
 
     public void mergeDispositivosOnlineCRDT(int zona, Map<String, Set<String>> toMerge) {
@@ -278,4 +347,27 @@ class UpdatesHandler extends Thread {
         }
     }
 
+    public void mergeDispositivosAtivosCRDT(int zona, Set<String> toMerge){
+        if(!this.dispositivosAtivosCRDT.containsKey(zona)){
+            this.dispositivosAtivosCRDT.put(zona,new HashSet<>());
+        }
+        else{
+            this.dispositivosAtivosCRDT.get(zona).clear();
+        }
+        this.dispositivosAtivosCRDT.get(zona).addAll(toMerge);
+    }
+
+    public void mergeEventosCRDT(int zona, Map<String,Integer> toMerge){
+        if(!this.totalEventosOcorridosCRDT.containsKey(zona))
+            this.totalEventosOcorridosCRDT.put(zona, new HashMap<>());
+        Map<String,Integer> zonaMapa = this.totalEventosOcorridosCRDT.get(zona);
+        for(Map.Entry<String,Integer> entry: toMerge.entrySet()){
+            if (zonaMapa.containsKey(entry.getKey())) {
+                zonaMapa.replace(entry.getKey(), entry.getValue());
+            }
+            else{
+                zonaMapa.put(entry.getKey(),entry.getValue());
+            }
+        }
+    }
 }
