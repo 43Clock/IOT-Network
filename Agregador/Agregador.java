@@ -91,9 +91,9 @@ public class Agregador {
                         inform.send(serialized);
                 }
 
-                System.out.println("Dispositivos:"+this.dispositivosOnlineCRDT.get(this.zona));
-                System.out.println("Dispositivos Global:"+this.dispositivosOnlineCRDT);
-                System.out.println("Eventos:" + this.totalEventosOcorridosCRDT.get(this.zona));
+//                System.out.println("Dispositivos:"+this.dispositivosOnlineCRDT.get(this.zona));
+//                System.out.println("Dispositivos Global:"+this.dispositivosOnlineCRDT);
+//                System.out.println("Eventos:" + this.totalEventosOcorridosCRDT.get(this.zona));
             }
         }
     }
@@ -186,7 +186,7 @@ public class Agregador {
         if(msg.startsWith("inativo")){
             String id = msg.split(":")[1];
             this.dispositivosAtivosCRDT.get(this.zona).remove(id);
-            System.out.println("Ativos: "+this.dispositivosAtivosCRDT);
+//            System.out.println("Ativos: "+this.dispositivosAtivosCRDT);
         }
 
         if(msg.startsWith("logout")){
@@ -305,7 +305,6 @@ class UpdatesHandler extends Thread {
             String[] tipoZona = split[0].split("-");
             int zona = Integer.parseInt(tipoZona[1].split("\\.")[0]);
             int versao = Integer.parseInt(tipoZona[1].split("\\.")[1]);
-            System.out.println("Version "+versao+" from "+zona);
             //Caso seja a primeira vez que recebe algo da zona, cria entry no map com versão 0
             if(!this.versions.containsKey(zona)){
                 this.versions.put(zona, new HashMap<>());
@@ -319,10 +318,9 @@ class UpdatesHandler extends Thread {
                     if(this.versions.get(zona).get(1) < versao){
                         if(split.length>1){
                             mergeDispositivosOnlineCRDT(zona, deserializeOnline(split[1]));
-                            System.out.println(str);
                             verificaPercentagem();
                             System.out.println("CRDT-Online: " + this.dispositivosOnlineCRDT);
-                            this.versions.get(zona).replace(1,versao+1);
+                            this.versions.get(zona).replace(1,versao);
                             for(int ignored : vizinhos)
                                 inform.send(str);
                         }
@@ -336,7 +334,7 @@ class UpdatesHandler extends Thread {
                             mergeDispositivosAtivosCRDT(zona, new HashSet<>());
                         }
                         System.out.println("CRDT-Ativos: " + this.dispositivosAtivosCRDT);
-                        this.versions.get(zona).replace(2,versao+1);
+                        this.versions.get(zona).replace(2,versao);
                         for(int ignored : vizinhos)
                             inform.send(str);
                     }
@@ -347,7 +345,7 @@ class UpdatesHandler extends Thread {
                             mergeEventosCRDT(zona, deserializeEventos(split[1]));
                         }
                         System.out.println("CRDT-Eventos: " + this.totalEventosOcorridosCRDT);
-                        this.versions.get(zona).replace(3,versao+1);
+                        this.versions.get(zona).replace(3,versao);
                         for(int ignored : vizinhos)
                             inform.send(str);
                     }
@@ -389,20 +387,22 @@ class UpdatesHandler extends Thread {
     }
 
     public void mergeDispositivosOnlineCRDT(int zona, Map<String, Set<String>> toMerge) {
-        if(!this.dispositivosOnlineCRDT.containsKey(zona)){
+        if (!this.dispositivosOnlineCRDT.containsKey(zona)) {
             this.dispositivosOnlineCRDT.put(zona, new HashMap<>());
             Map<String, Set<String>> zonaValues = this.dispositivosOnlineCRDT.get(zona);
-            for(Map.Entry<String,Set<String>> entry: toMerge.entrySet()){
+            for (Map.Entry<String, Set<String>> entry : toMerge.entrySet()) {
                 zonaValues.put(entry.getKey(), new HashSet<>());
                 Set<String> setTipo = zonaValues.get(entry.getKey());
                 setTipo.addAll(entry.getValue());
             }
-        }
-        else {
+        } else {
             Map<String, Set<String>> zonaValues = this.dispositivosOnlineCRDT.get(zona);
             //Primeiro esvaziar tudo o que tem
-            for (Map.Entry<String, Set<String>> entry : this.dispositivosOnlineCRDT.get(zona).entrySet())
-                entry.getValue().clear();
+            for (Map.Entry<String, Set<String>> entry : zonaValues.entrySet()) {
+                Set<String> set = entry.getValue();
+                for (String ele : set)
+                    set.remove(ele);
+            }
             //Depois preencher com nova info
             for (Map.Entry<String, Set<String>> entry : toMerge.entrySet()) {
                 zonaValues.putIfAbsent(entry.getKey(), new HashSet<>());
@@ -505,7 +505,6 @@ class ClienteHandler extends Thread {
     public void run(){
         while (true){
             byte[] msg = fromClient.recv();
-            System.out.println("Received from Client: "+new String(msg));
             String[] split = new String(msg).split(":");
             switch (split[0]){
                 case "1" -> fromClient.send(onlineTipo(split[1]));
@@ -519,11 +518,12 @@ class ClienteHandler extends Thread {
 
     public String onlineTipo(String tipo){
         int contador = 0;
-        for(Map<String, Set<String>> entry: this.dispositivosOnlineCRDT.values())
-            if(entry.containsKey(tipo))
-                contador += entry.values().size();
+        for(Map<String, Set<String>> entry: this.dispositivosOnlineCRDT.values()) {
+            if (entry.containsKey(tipo))
+                contador += entry.get(tipo).size();
             else
                 contador += 0;
+        }
         return "Encontram-se "+contador+" dispositivos do tipo "+tipo+" online!";
     }
 
